@@ -1,6 +1,6 @@
 pub trait BitState<T> {
     fn set(&mut self, new: T);
-    fn set_with_changes(&mut self, new: T) -> Option<(Vec<usize>, Vec<usize>)>;
+    fn set_with_changes(&mut self, new: T) -> Option<(Vec<u8>, Vec<u8>)>;
     fn set_bit(&mut self, n: u8);
     fn clear_bit(&mut self, n: u8);
     fn get_bit(&self, n: u8) -> bool;
@@ -16,7 +16,7 @@ macro_rules! bit_state_impl {
               *self = new;
             }
 
-            fn set_with_changes(&mut self, new: $t) -> Option<(Vec<usize>,Vec<usize>)> {
+            fn set_with_changes(&mut self, new: $t) -> Option<(Vec<u8>,Vec<u8>)> {
               if *self == new {
                 return None;
               };
@@ -24,8 +24,8 @@ macro_rules! bit_state_impl {
               let mut down_bits = (*self ^ new) & (!new);
               let mut pos = 0;
 
-              let mut ups = Vec::new();
-              let mut downs = Vec::new();
+              let mut ups: Vec<u8> = Vec::new();
+              let mut downs: Vec<u8> = Vec::new();
 
               while (up_bits != 0 || down_bits !=0) {
                 if(up_bits & 1 == 1){
