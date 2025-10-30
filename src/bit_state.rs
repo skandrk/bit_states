@@ -1,4 +1,5 @@
 pub trait BitState<T> {
+    const MAX_SIZE: u8 = (std::mem::size_of::<T>() * 8) as u8;
     fn set(&mut self, new: T);
     fn set_with_changes(&mut self, new: T) -> Option<(Vec<u8>, Vec<u8>)>;
     fn set_bit(&mut self, n: u8);
@@ -18,7 +19,7 @@ macro_rules! bit_state_impl {
 
             fn set_with_changes(&mut self, new: $t) -> Option<(Vec<u8>,Vec<u8>)> {
               if *self == new {
-                return None;
+                return None
               };
               let mut up_bits = (*self ^ new) & new;
               let mut down_bits = (*self ^ new) & (!new);
@@ -28,10 +29,10 @@ macro_rules! bit_state_impl {
               let mut downs: Vec<u8> = Vec::new();
 
               while (up_bits != 0 || down_bits !=0) {
-                if(up_bits & 1 == 1){
+                if (up_bits & 1) == 1 {
                   ups.push(pos);
                 }
-                if(down_bits & 1 == 1){
+                if (down_bits & 1) == 1 {
                   downs.push(pos);
                 }
                 up_bits >>= 1;
