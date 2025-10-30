@@ -7,6 +7,3 @@ pub use bit_state::BitState;
 pub mod atomic_bit_state;
 #[cfg(feature = "atomic")]
 pub use atomic_bit_state::AtomicBitState;
-
-#[cfg(feature = "bit-watcher")]
-pub mod bit_state_watcher;

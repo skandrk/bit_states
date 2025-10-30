@@ -72,11 +72,21 @@ mod tests {
     use crate::BitState;
 
     #[test]
-    fn it_works() {
+    fn simple() {
         let mut result = 0u8;
         result.set_bit(1);
         assert_eq!(result, 0b_0000_0010);
         result.set_bit(3);
         assert_eq!(result, 0b_0000_1010);
+    }
+
+    #[test]
+    fn test_set_with_changes() {
+        let mut result = 0b_0001_1011 as u8;
+        if let Some((ups, downs)) = result.set_with_changes(0b_1001_0101 as u8) {
+            assert_eq!(ups, Vec::from([2, 7]));
+            assert_eq!(downs, Vec::from([1, 3]));
+            assert_eq!(result, 0b_1001_0101 as u8);
+        }
     }
 }

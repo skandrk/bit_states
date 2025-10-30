@@ -92,7 +92,7 @@ bit_state_impl_atomics!(AtomicU8 : u8, AtomicU16 : u16, AtomicU32 : u32, AtomicU
 mod tests {
     use crate::AtomicBitState;
     use std::sync::Arc;
-    use std::sync::atomic::AtomicU8;
+    use std::sync::atomic::{AtomicU8, AtomicU16};
 
     #[test]
     fn atomic_u8() {
@@ -108,5 +108,18 @@ mod tests {
             result.load(std::sync::atomic::Ordering::Acquire),
             0b_0000_1000
         );
+    }
+
+    #[test]
+    fn test_set_with_changes() {
+        let result = AtomicU16::from(0b_0001_1011_0011_1010 as u16);
+        if let Some((ups, downs)) = result.set_with_changes(0b_1001_0101_1100_0110 as u16) {
+            assert_eq!(ups, Vec::from([2, 6, 7, 10, 15]));
+            assert_eq!(downs, Vec::from([3, 4, 5, 9, 11]));
+            assert_eq!(
+                result.load(std::sync::atomic::Ordering::Relaxed),
+                0b_1001_0101_1100_0110 as u16
+            );
+        }
     }
 }
