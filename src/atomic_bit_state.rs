@@ -1,8 +1,9 @@
 use std::sync::atomic::{AtomicU8, AtomicU16, AtomicU32, AtomicU64, Ordering};
 
-pub trait AtomicBitState<T, F> {
-    fn set(&self, new: F);
-    fn set_with_changes(&self, new: F) -> Option<(Vec<u8>, Vec<u8>)>;
+pub trait AtomicBitState<T, U> {
+    const MAX_SIZE: u8 = (std::mem::size_of::<U>() * 8) as u8;
+    fn set(&self, new: U);
+    fn set_with_changes(&self, new: U) -> Option<(Vec<u8>, Vec<u8>)>;
     fn set_bit(&self, n: u8);
     fn clear_bit(&self, n: u8);
     fn get_bit(&self, n: u8) -> bool;
@@ -88,7 +89,6 @@ macro_rules! bit_state_impl_atomics {
 bit_state_impl_atomics!(AtomicU8 : u8, AtomicU16 : u16, AtomicU32 : u32, AtomicU64 : u64);
 
 #[cfg(test)]
-#[cfg(feature = "atomic")]
 mod tests {
     use crate::AtomicBitState;
     use std::sync::Arc;
