@@ -18,8 +18,19 @@ pub mod atomic_bit_flags;
 
 pub use bit_flags_derive::PrintInput;
 
-#[derive(PrintInput)]
-enum Status {
-    Ready = 0,
-    Active = 2,
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn simple() {
+        #[derive(PrintInput)]
+        enum Status {
+            Ready = 0,
+            Active = 2,
+        }
+
+        println!("Variants: {}", Status::variant_count());
+        println!("Names: {:?}", Status::variant_names());
+    }
 }
