@@ -4,8 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bit_flags_derive = { path = "bit_flags_derive", optional = true }
 
 [features]
 default=["non-atomic"]
 non-atomic=[]
 atomic=[]
+derive = ["bit_flags_derive"]
