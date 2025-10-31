@@ -7,7 +7,7 @@ edition = "2024"
 bit_flags_derive = { path = "bit_flags_derive", optional = true }
 
 [features]
-default=["non-atomic"]
+default=["non-atomic", "bit_flags_derive"]
 non-atomic=[]
 atomic=[]
 derive = ["bit_flags_derive"]

@@ -15,3 +15,11 @@ pub mod atomic_bit_state;
 
 #[cfg(feature = "atomic")]
 pub mod atomic_bit_flags;
+
+pub use bit_flags_derive::PrintInput;
+
+#[derive(PrintInput)]
+enum Status {
+    Ready = 0,
+    Active = 2,
+}
