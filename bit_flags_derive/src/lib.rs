@@ -13,18 +13,35 @@ pub fn hello_world_derive(input: TokenStream) -> TokenStream {
         _ => panic!("Not an Enum"),
     };
 
-    let variant_count = variants.len();
+    let variant_data: Vec<_> = variants
+        .iter()
+        .map(|v| {
+            let variant_name = &v.ident;
+            let discriminant = match &v.discriminant {
+                Some((_, expr)) => expr,
+                None => panic!("All variants must have explicit values! (e.g., Ready = 0)"),
+            };
+            (variant_name, discriminant)
+        })
+        .collect();
 
-    let variant_names = variants.iter().map(|v| &v.ident);
+    let from_bit_arms = variant_data.iter().map(|(variant_name, discriminant)| {
+        quote! {
+            #discriminant => Some(#name::#variant_name),
+        }
+    });
 
     let expanded = quote! {
         impl #name {
-            pub fn variant_count() -> usize {
-                #variant_count
+            pub fn bit_position(&self) -> u8 {
+                *self as u8
             }
 
-            pub fn variant_names() -> &'static [&'static str] {
-                &[#(stringify!(#variant_names)),*]
+            pub fn from_bit(bit: u8) -> Option<Self> {
+                match bit {
+                    #(#from_bit_arms)*
+                    _ => None,
+                }
             }
         }
     };

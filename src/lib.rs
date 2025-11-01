@@ -24,13 +24,17 @@ mod tests {
 
     #[test]
     fn simple() {
-        #[derive(PrintInput)]
+        #[derive(Debug, Clone, Copy, PrintInput)]
+        #[repr(u8)]
         enum Status {
             Ready = 0,
             Active = 2,
         }
 
-        println!("Variants: {}", Status::variant_count());
-        println!("Names: {:?}", Status::variant_names());
+        let s = Status::Active;
+        println!("Bit: {}", s.bit_position()); // 2
+
+        let from_bit = Status::from_bit(0);
+        println!("{:?}", from_bit); // Some(Complete)
     }
 }
