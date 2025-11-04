@@ -3,19 +3,12 @@
 version = 4
 
 [[package]]
-name = "bit_states_derive"
+name = "bitstates"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "bitstates"
-version = "0.1.0"
-dependencies = [
- "bit_states_derive",
 ]
 
 [[package]]

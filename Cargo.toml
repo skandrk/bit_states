@@ -1,7 +1,7 @@
 [package]
 name = "bitstates"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 authors = ["Skandrk <skandrk@outlook.com>"]
 license = "MIT OR Apache-2.0"
 description = "Reactive bit state management with event callbacks"
@@ -12,9 +12,14 @@ keywords = ["bits", "flags", "events", "reactive", "state"]
 categories = ["data-structures", "embedded", "hardware-support"]
 
 [dependencies]
-bit_states_derive = { path = "bit_states_derive", optional = false }
+syn = { version = "2.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"
 
 [features]
 default=["non-atomic"]
 non-atomic=[]
 atomic=[]
+
+[lib]
+proc-macro = true
