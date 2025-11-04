@@ -7,7 +7,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let enum_name = &input.ident;
 
-    let struct_name = format_ident!("{}State", enum_name);
+    let struct_name = format_ident!("{}States", enum_name);
 
     let enums = match &input.data {
         Data::Enum(data_enum) => &data_enum.variants,
@@ -74,14 +74,23 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         impl #enum_name {
-          fn from_flagbit(n: u8) ->  Option<Self>{
+          pub fn from_flagbit(n: u8) ->  Option<Self>{
             match n {
               #(#branch_arms)*
               _ => None
             }
           }
-        }
 
+          #[inline]
+          pub const fn get_flagbit(&self) -> u8 {
+            *self as u8
+          }
+
+          pub fn get_flagmask(&self) -> #bit_state_type {
+            return 1 << self.get_flagbit()
+          }
+
+        }
         pub struct #struct_name<Fup, Fdown>
         where
           Fup: Fn(#enum_name),
@@ -129,9 +138,38 @@ pub fn derive(input: TokenStream) -> TokenStream {
               };
               down_bits &= down_bits - 1;
             }
-
             self.bit_state = new;
           }
+
+          pub fn set_flag(&mut self, flag: #enum_name) {
+            let bit_mask = flag.get_flagmask();
+            if !self.is_set(flag) {
+              self.bit_state |= bit_mask;
+              (self.up_event)(flag);
+            }
+          }
+
+          pub fn reset_flag(&mut self, flag: #enum_name) {
+            let bit_mask = flag.get_flagmask();
+            if self.is_set(flag) {
+              self.bit_state &= !bit_mask;
+              (self.down_event)(flag);
+            }
+          }
+
+          pub fn get(&self) -> #bit_state_type {
+            self.bit_state
+          }
+
+          pub fn clear(&mut self) {
+            self.bit_state = 0;
+          }
+
+          #[inline]
+          pub fn is_set(&self, flag: #enum_name) -> bool {
+            (self.bit_state & flag.get_flagmask()) != 0
+          }
+
         }
     };
     TokenStream::from(expanded)

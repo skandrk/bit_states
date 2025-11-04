@@ -1,8 +1,8 @@
 #[cfg(feature = "atomic")]
-pub use bit_flags_derive::AtomicBitState;
+pub use bit_states_derive::AtomicBitStates;
 
 #[cfg(feature = "non-atomic")]
-pub use bit_flags_derive::BitState;
+pub use bit_states_derive::BitStates;
 
 #[cfg(test)]
 mod tests {
@@ -13,7 +13,7 @@ mod tests {
         sync::{Arc, Mutex},
     };
 
-    #[derive(Debug, Clone, AtomicBitState, BitState, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, AtomicBitStates, BitStates, PartialEq, Eq)]
     #[repr(u8)]
     enum Status {
         Zero = 0,
@@ -28,7 +28,7 @@ mod tests {
         let events_up: RefCell<Vec<Status>> = RefCell::new(Vec::new());
         let events_down: RefCell<Vec<Status>> = RefCell::new(Vec::new());
 
-        let mut set_status = StatusState::new(
+        let mut set_status = StatusStates::new(
             |a| events_up.borrow_mut().push(a),
             |a| events_down.borrow_mut().push(a),
         );
@@ -48,11 +48,30 @@ mod tests {
     }
 
     #[test]
+    fn normal_helpers() {
+        let events_up: RefCell<Vec<Status>> = RefCell::new(Vec::new());
+        let events_down: RefCell<Vec<Status>> = RefCell::new(Vec::new());
+
+        let mut set_status = StatusStates::new(
+            |a| events_up.borrow_mut().push(a),
+            |a| events_down.borrow_mut().push(a),
+        );
+
+        set_status.set_flag(Status::Three);
+        assert_eq!(events_up.borrow_mut().pop(), Some(Status::Three));
+        assert_eq!(set_status.is_set(Status::Three), true);
+        set_status.clear();
+        assert_eq!(set_status.bit_state, 0);
+        set_status.reset_flag(Status::Three);
+        assert_ne!(events_down.borrow_mut().pop(), Some(Status::Three));
+    }
+
+    #[test]
     fn atomics() {
         let events_up: Arc<Mutex<Vec<Status>>> = Arc::new(Mutex::new(Vec::new()));
         let events_down: Arc<Mutex<Vec<Status>>> = Arc::new(Mutex::new(Vec::new()));
 
-        let set_status = std::sync::Arc::new(StatusAtomicState::new(
+        let set_status = std::sync::Arc::new(StatusAtomicStates::new(
             {
                 let events_up = events_up.clone();
                 move |a| events_up.lock().unwrap().push(a)

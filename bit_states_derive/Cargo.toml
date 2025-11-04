@@ -1,5 +1,5 @@
 [package]
-name = "bit_flags_derive"
+name = "bit_states_derive"
 version = "0.1.0"
 edition = "2024"
 

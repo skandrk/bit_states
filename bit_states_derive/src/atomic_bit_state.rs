@@ -7,7 +7,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let enum_name = &input.ident;
 
-    let struct_name = format_ident!("{}AtomicState", enum_name);
+    let struct_name = format_ident!("{}AtomicStates", enum_name);
 
     let enums = match &input.data {
         Data::Enum(data_enum) => &data_enum.variants,

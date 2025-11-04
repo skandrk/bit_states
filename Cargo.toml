@@ -1,10 +1,10 @@
 [package]
-name = "bit_states"
+name = "bitstates"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bit_flags_derive = { path = "bit_flags_derive", optional = true }
+bit_states_derive = { path = "bit_states_derive", optional = false }
 
 [features]
 default=["non-atomic"]
