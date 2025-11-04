@@ -7,7 +7,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
     let enum_name = &input.ident;
 
-    let struct_name = format_ident!("{}AtomicSet", enum_name);
+    let struct_name = format_ident!("{}AtomicState", enum_name);
 
     let enums = match &input.data {
         Data::Enum(data_enum) => &data_enum.variants,
@@ -64,7 +64,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         impl #enum_name {
-          fn from_bits(n: u8) ->  Option<Self>{
+          fn from_flagbit_atomic(n: u8) ->  Option<Self>{
             match n {
               #(#branch_arms)*
               _ => None
@@ -84,8 +84,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
         impl <Fup, Fdown> #struct_name<Fup, Fdown>
         where
-          Fup: Fn(#enum_name),
-          Fdown: Fn(#enum_name)
+          Fup: Fn(#enum_name) + Send + Sync,
+          Fdown: Fn(#enum_name) + Send + Sync
         {
           pub fn new(up_event: Fup, down_event: Fdown) -> Self {
             Self {
@@ -95,7 +95,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
           }
 
-          pub fn set_with_state(&self, new: #primitive_type ) {
+          pub fn set(&self, new: #primitive_type ) {
 
             let old = self.bit_state.swap(new, core::sync::atomic::Ordering::AcqRel);
 
@@ -108,7 +108,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             while up_bits != 0 {
               let rightmost_set_bit = up_bits.trailing_zeros() as u8;
-              if let Some(flag) = #enum_name::from_bits(rightmost_set_bit){
+              if let Some(flag) = #enum_name::from_flagbit_atomic(rightmost_set_bit){
                 (self.up_event)(flag);
               };
               up_bits &= up_bits - 1;
@@ -116,7 +116,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             while down_bits != 0 {
               let rightmost_set_bit = down_bits.trailing_zeros() as u8;
-              if let Some(flag) = #enum_name::from_bits(rightmost_set_bit){
+              if let Some(flag) = #enum_name::from_flagbit_atomic(rightmost_set_bit){
                 (self.down_event)(flag);
               };
               down_bits &= down_bits - 1;
