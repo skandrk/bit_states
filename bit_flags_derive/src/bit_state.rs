@@ -1,0 +1,138 @@
+use proc_macro::TokenStream;
+use quote::{format_ident, quote};
+use syn::{Data, DeriveInput, parse_macro_input};
+
+pub fn derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let enum_name = &input.ident;
+
+    let struct_name = format_ident!("{}Set", enum_name);
+
+    let enums = match &input.data {
+        Data::Enum(data_enum) => &data_enum.variants,
+        _ => panic!("Not an Enum"),
+    };
+
+    let enum_data: Vec<_> = enums
+        .iter()
+        .map(|v| {
+            let variant_name = &v.ident;
+            let variant_value = match &v.discriminant {
+                Some((_, expr)) => expr,
+                None => panic!("All variants/flags must have explicit values that are greater than Zero! (e.g., Ready = 1)"),
+            };
+            (variant_name, variant_value)
+        })
+        .collect();
+
+    let branch_arms = enum_data.iter().map(|(vn, vv)| {
+        quote! {
+          #vv => Some(#enum_name::#vn),
+        }
+    });
+
+    let max_branch_value = enum_data
+        .iter()
+        .filter_map(|x| {
+            if let syn::Expr::Lit(el) = x.1 {
+                if let syn::Lit::Int(lit_int) = &el.lit {
+                    return lit_int.base10_parse::<u8>().ok();
+                }
+            }
+            None
+        })
+        .max()
+        .unwrap_or(0);
+
+    let bit_state_type = match max_branch_value {
+        0..=7 => {
+            quote! { u8 }
+        }
+        8..=15 => {
+            quote! { u16 }
+        }
+        16..=31 => {
+            quote! { u32 }
+        }
+        32..=63 => {
+            quote! { u64 }
+        }
+        64..=127 => {
+            quote! { u128 }
+        }
+        n => {
+            return syn::Error::new(
+                proc_macro2::Span::call_site(),
+                format!("Bit position {} is too large (max 127)", n),
+            )
+            .to_compile_error()
+            .into();
+        }
+    };
+
+    let expanded = quote! {
+
+        impl #enum_name {
+          fn from_bits(n: u8) ->  Option<Self>{
+            match n {
+              #(#branch_arms)*
+              _ => None
+            }
+          }
+        }
+
+        pub struct #struct_name<Fup, Fdown>
+        where
+          Fup: Fn(#enum_name),
+          Fdown: Fn(#enum_name)
+        {
+          bit_state: #bit_state_type,
+          up_event: Fup,
+          down_event: Fdown
+        }
+
+        impl <Fup, Fdown> #struct_name<Fup, Fdown>
+        where
+          Fup: Fn(#enum_name),
+          Fdown: Fn(#enum_name)
+        {
+          pub fn new(up_event: Fup, down_event: Fdown) -> Self {
+            Self {
+              bit_state: 0,
+              up_event,
+              down_event
+            }
+          }
+
+          pub fn set_with_state(&mut self, new: #bit_state_type ) {
+
+            let mut up_bits = (self.bit_state ^ new) & new;
+            let mut down_bits = (self.bit_state ^ new) & (!new);
+
+            if up_bits == 0 && down_bits == 0 {
+              return;
+            }
+
+            while up_bits != 0 {
+              let rightmost_set_bit = up_bits.trailing_zeros() as u8;
+              if let Some(flag) = #enum_name::from_bits(rightmost_set_bit){
+                (self.up_event)(flag);
+              };
+              up_bits &= up_bits - 1;
+            }
+
+            while down_bits != 0 {
+              let rightmost_set_bit = down_bits.trailing_zeros() as u8;
+              if let Some(flag) = #enum_name::from_bits(rightmost_set_bit){
+                (self.down_event)(flag);
+              };
+              down_bits &= down_bits - 1;
+            }
+
+            self.bit_state = new;
+          }
+        }
+    };
+    TokenStream::from(expanded)
+}

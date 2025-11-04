@@ -16,25 +16,31 @@ pub mod atomic_bit_state;
 #[cfg(feature = "atomic")]
 pub mod atomic_bit_flags;
 
-pub use bit_flags_derive::PrintInput;
+use bit_flags_derive::AtomicBitState;
+pub use bit_flags_derive::BitState;
 
 #[cfg(test)]
 mod tests {
+
     use crate::*;
+
+    #[derive(Debug, AtomicBitState)]
+    #[repr(u8)]
+    enum Status {
+        Zero = 0,
+        Ready = 1,
+        Active = 2,
+    }
 
     #[test]
     fn simple() {
-        #[derive(Debug, Clone, Copy, PrintInput)]
-        #[repr(u8)]
-        enum Status {
-            Ready = 0,
-            Active = 2,
-        }
+        let set_status = StatusAtomicSet::new(
+            |a| println!("Up Event {:?}", a),
+            |a| println!("Down Event {:?}", a),
+        );
 
-        let s = Status::Active;
-        println!("Bit: {}", s.bit_position()); // 2
-
-        let from_bit = Status::from_bit(0);
-        println!("{:?}", from_bit); // Some(Complete)
+        set_status.set_with_state(0b_0000_0001 as u8);
+        set_status.set_with_state(0b_0000_0010 as u8);
+        set_status.set_with_state(0b_0000_0100 as u8);
     }
 }
