@@ -2,6 +2,14 @@
 name = "bitstates"
 version = "0.1.0"
 edition = "2024"
+authors = ["Skandrk <skandrk@outlook.com>"]
+license = "MIT OR Apache-2.0"
+description = "Reactive bit state management with event callbacks"
+documentation = "https://docs.rs/bitstates"
+homepage = "https://github.com/skandrk/bit_states"
+repository = "https://github.com/skandrk/bit_states"
+keywords = ["bits", "flags", "events", "reactive", "state"]
+categories = ["data-structures", "embedded", "hardware-support"]
 
 [dependencies]
 bit_states_derive = { path = "bit_states_derive", optional = false }
