@@ -20,7 +20,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
             let variant_name = &v.ident;
             let variant_value = match &v.discriminant {
                 Some((_, expr)) => expr,
-                None => panic!("All variants/flags must have explicit values that are greater than Zero! (e.g., Ready = 1)"),
+                None => panic!("All variants/flags must have explicit values that are equal to or greater than Zero! (e.g., Ready = 0)"),
             };
             (variant_name, variant_value)
         })

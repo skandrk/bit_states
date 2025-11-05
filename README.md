@@ -14,9 +14,9 @@ bitstates = "0.1.0"
 ## Example
 
 ```rust
-use bitstates::BitState;
+use bitstates::BitStates;
 
-#[derive(BitState)]
+#[derive(BitStates)]
 #[repr(u8)]
 enum Status {
     Ready = 0,
@@ -24,7 +24,7 @@ enum Status {
 }
 
 fn main() {
-    let mut status = StatusSet::new(
+    let mut status = StatusStates::new(
         |flag| println!("SET: {:?}", flag),
         |flag| println!("CLEARED: {:?}", flag),
     );
