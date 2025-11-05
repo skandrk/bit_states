@@ -5,6 +5,32 @@ use syn::{parse_macro_input, Data, DeriveInput};
 pub fn derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
+    let repr_type = input.attrs.iter().find_map(|attr| {
+        if attr.path().is_ident("repr") {
+            attr.parse_args::<syn::Ident>().ok()
+        } else {
+            None
+        }
+    });
+
+    match repr_type {
+        Some(ty) => {
+            if ty.to_string().as_str() != "u8" {
+                return syn::Error::new(
+                    input.ident.span(),
+                    format!("BitStates requires repr to be u8, found '{}'", ty),
+                )
+                .to_compile_error()
+                .into();
+            }
+        }
+        None => {
+            return syn::Error::new(input.ident.span(), "BitFlags requires #[repr(u8)]")
+                .to_compile_error()
+                .into();
+        }
+    };
+
     let enum_name = &input.ident;
 
     let struct_name = format_ident!("{}States", enum_name);
