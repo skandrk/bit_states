@@ -64,11 +64,20 @@ pub fn derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         impl #enum_name {
-          fn from_flagbit_atomic(n: u8) ->  Option<Self>{
+          fn from_flagbit(n: u8) ->  Option<Self>{
             match n {
               #(#branch_arms)*
               _ => None
             }
+          }
+
+          #[inline]
+          pub const fn get_flagbit(&self) -> u8 {
+            *self as u8
+          }
+
+          pub fn get_flagmask(&self) -> #primitive_type {
+            return 1 << self.get_flagbit()
           }
         }
 
@@ -108,7 +117,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             while up_bits != 0 {
               let rightmost_set_bit = up_bits.trailing_zeros() as u8;
-              if let Some(flag) = #enum_name::from_flagbit_atomic(rightmost_set_bit){
+              if let Some(flag) = #enum_name::from_flagbit(rightmost_set_bit){
                 (self.up_event)(flag);
               };
               up_bits &= up_bits - 1;
@@ -116,7 +125,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
 
             while down_bits != 0 {
               let rightmost_set_bit = down_bits.trailing_zeros() as u8;
-              if let Some(flag) = #enum_name::from_flagbit_atomic(rightmost_set_bit){
+              if let Some(flag) = #enum_name::from_flagbit(rightmost_set_bit){
                 (self.down_event)(flag);
               };
               down_bits &= down_bits - 1;

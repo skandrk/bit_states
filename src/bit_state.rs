@@ -89,8 +89,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
           pub fn get_flagmask(&self) -> #bit_state_type {
             return 1 << self.get_flagbit()
           }
-
         }
+
         pub struct #struct_name<Fup, Fdown>
         where
           Fup: Fn(#enum_name),
