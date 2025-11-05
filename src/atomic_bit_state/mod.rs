@@ -131,6 +131,37 @@ pub fn derive(input: TokenStream) -> TokenStream {
               down_bits &= down_bits - 1;
             }
           }
+
+          pub fn set_flag(&self, flag: #enum_name) {
+            let bit_mask = flag.get_flagmask();
+            let old = self.bit_state.fetch_or(bit_mask, core::sync::atomic::Ordering::Release);
+            let was_already_set = (old & bit_mask) != 0;
+            if !was_already_set {
+              (self.up_event)(flag);
+            }
+          }
+
+          pub fn reset_flag(&self, flag: #enum_name) {
+            let bit_mask = flag.get_flagmask();
+            let old = self.bit_state.fetch_and(!bit_mask, core::sync::atomic::Ordering::Release);
+            let was_already_set = (old & bit_mask) != 0;
+            if was_already_set {
+              (self.down_event)(flag);
+            }
+          }
+
+          pub fn get(&self) -> #primitive_type {
+            self.bit_state.load(core::sync::atomic::Ordering::Acquire)
+          }
+
+          pub fn clear(&self) {
+            self.bit_state.store(0, core::sync::atomic::Ordering::Release);
+          }
+
+          pub fn is_set(&self, flag: #enum_name) -> bool {
+            let current = self.bit_state.load(core::sync::atomic::Ordering::Acquire);
+            (current & flag.get_flagmask()) != 0
+          }
         }
     };
     TokenStream::from(expanded)

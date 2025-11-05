@@ -1,3 +1,7 @@
+//!  #BitStates
+//!
+//!  Reactive bit state management with event callbacks for Rust.
+
 #[cfg(feature = "atomic")]
 mod atomic_bit_state;
 
