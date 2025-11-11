@@ -1,10 +1,13 @@
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, Data, DeriveInput};
+use syn::{parse_macro_input, spanned::Spanned, Data, DeriveInput};
 
 pub fn derive(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
+    // ----------
+    // The Enum must have u8 repr as this is sufficient
+    // ---------
     let repr_type = input.attrs.iter().find_map(|attr| {
         if attr.path().is_ident("repr") {
             attr.parse_args::<syn::Ident>().ok()
@@ -25,32 +28,90 @@ pub fn derive(input: TokenStream) -> TokenStream {
             }
         }
         None => {
-            return syn::Error::new(input.ident.span(), "BitFlags requires #[repr(u8)]")
+            return syn::Error::new(input.ident.span(), "BitStates requires #[repr(u8)]")
                 .to_compile_error()
                 .into();
         }
     };
 
+    // ----------
+    // Confirm that Macro is being applied on a Enum
+    // ----------
+    let enums = match input.data {
+        Data::Enum(data_enum) => data_enum.variants,
+        _ => {
+            return syn::Error::new(input.ident.span(), "BitStates should be applied on Enum")
+                .to_compile_error()
+                .into()
+        }
+    };
+
+    // ----------
+    // Each Variant represents a bit position, and the Name indicates the Flag
+    // ----------
+    for variant in &enums {
+        if variant.discriminant.is_none() {
+            return syn::Error::new(
+                variant.span(),
+                "all variants must have explicit non-negative values (e.g., Ready = 0)",
+            )
+            .to_compile_error()
+            .into();
+        }
+    }
+
     let enum_name = &input.ident;
 
     let struct_name = format_ident!("{}States", enum_name);
-
-    let enums = match &input.data {
-        Data::Enum(data_enum) => &data_enum.variants,
-        _ => panic!("Not an Enum"),
-    };
 
     let enum_data: Vec<_> = enums
         .iter()
         .map(|v| {
             let variant_name = &v.ident;
-            let variant_value = match &v.discriminant {
-                Some((_, expr)) => expr,
-                None => panic!("All variants/flags must have explicit values that are equal to or greater than Zero! (e.g., Ready = 0)"),
-            };
+            let variant_value = &v.discriminant.as_ref().unwrap().1;
             (variant_name, variant_value)
         })
         .collect();
+
+    for (variant_name, variant_value) in &enum_data {
+        if let syn::Expr::Lit(el) = variant_value {
+            if let syn::Lit::Int(lit_int) = &el.lit {
+                match lit_int.base10_parse::<u8>() {
+                    Ok(bv) if bv > 127 => {
+                        return syn::Error::new(
+                            el.span(),
+                            format!(
+                                "bit position {} is too large (max 127) for variant '{}'",
+                                bv, variant_name
+                            ),
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                    Err(_) => {
+                        return syn::Error::new(
+                            el.span(),
+                            "discriminant must be a valid u8 integer literal",
+                        )
+                        .to_compile_error()
+                        .into();
+                    }
+                    _ => {}
+                }
+            } else {
+                return syn::Error::new(
+                    variant_value.span(),
+                    "discriminant must be an integer literal",
+                )
+                .to_compile_error()
+                .into();
+            }
+        } else {
+            return syn::Error::new(variant_value.span(), "discriminant must be a literal value")
+                .to_compile_error()
+                .into();
+        }
+    }
 
     let branch_arms = enum_data.iter().map(|(vn, vv)| {
         quote! {
@@ -87,13 +148,8 @@ pub fn derive(input: TokenStream) -> TokenStream {
         64..=127 => {
             quote! { u128 }
         }
-        n => {
-            return syn::Error::new(
-                proc_macro2::Span::call_site(),
-                format!("Bit position {} is too large (max 127)", n),
-            )
-            .to_compile_error()
-            .into();
+        _ => {
+            unreachable!()
         }
     };
 
@@ -113,14 +169,15 @@ pub fn derive(input: TokenStream) -> TokenStream {
           }
 
           pub fn get_flagmask(&self) -> #bit_state_type {
-            return 1 << self.get_flagbit()
+            1 << self.get_flagbit()
           }
         }
 
         pub struct #struct_name<Fup, Fdown>
         where
           Fup: Fn(#enum_name),
-          Fdown: Fn(#enum_name)
+          Fdown: Fn(#enum_name),
+          #enum_name: Copy
         {
           bit_state: #bit_state_type,
           up_event: Fup,
@@ -191,7 +248,6 @@ pub fn derive(input: TokenStream) -> TokenStream {
             self.bit_state = 0;
           }
 
-          #[inline]
           pub fn is_set(&self, flag: #enum_name) -> bool {
             (self.bit_state & flag.get_flagmask()) != 0
           }

@@ -1,7 +1,7 @@
 use bitstates::*;
 use std::cell::RefCell;
 
-#[derive(Debug, Clone, Copy, BitStates, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, BitStates, PartialEq, Eq)]
 #[repr(u8)]
 enum Status {
     Zero = 0,
@@ -21,16 +21,16 @@ fn normal() {
         |a| events_down.borrow_mut().push(a),
     );
 
-    set_status.set(0b_0000_0001 as u8);
+    set_status.set(0b_0000_0001);
     assert_eq!(events_up.borrow_mut().pop(), Some(Status::Zero));
     assert_eq!(events_down.borrow_mut().pop(), None);
-    set_status.set(0b_0000_0010 as u8);
+    set_status.set(0b_0000_0010);
     assert_eq!(events_up.borrow_mut().pop(), Some(Status::One));
     assert_eq!(events_down.borrow_mut().pop(), Some(Status::Zero));
-    set_status.set(0b_0000_0100 as u8);
+    set_status.set(0b_0000_0100);
     assert_eq!(events_up.borrow_mut().pop(), Some(Status::Two));
     assert_eq!(events_down.borrow_mut().pop(), Some(Status::One));
-    set_status.set(0b_0001_0000 as u8);
+    set_status.set(0b_0001_0000);
     assert_eq!(events_up.borrow_mut().pop(), Some(Status::Four));
     assert_eq!(events_down.borrow_mut().pop(), Some(Status::Two));
 }
